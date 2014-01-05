@@ -2930,7 +2930,7 @@ static void wpa_driver_nl80211_handle_eapol_tx_status(int sock,
 	msg.msg_control = &control;
 	msg.msg_controllen = sizeof(control);
 
-	res = recvmsg(sock, &msg, MSG_ERRQUEUE);
+	res = recvmsg_wrapper(sock, &msg, MSG_ERRQUEUE);
 	/* if error or not fitting 802.3 header, return */
 	if (res < 14)
 		return;
@@ -3048,7 +3048,8 @@ static void * wpa_driver_nl80211_init(void *ctx, const char *ifname,
 	if (wpa_driver_nl80211_finish_drv_init(drv))
 		goto failed;
 
-	drv->eapol_tx_sock = socket(PF_PACKET, SOCK_DGRAM, 0);
+	drv->eapol_tx_sock = socket_wrapper(PF_PACKET, SOCK_DGRAM, 0);
+
 	if (drv->eapol_tx_sock < 0)
 		goto failed;
 
@@ -6397,7 +6398,7 @@ static int nl80211_send_eapol_data(struct i802_bss *bss,
 	ll.sll_protocol = htons(ETH_P_PAE);
 	ll.sll_halen = ETH_ALEN;
 	os_memcpy(ll.sll_addr, addr, ETH_ALEN);
-	ret = sendto(bss->drv->eapol_tx_sock, data, data_len, 0,
+	ret = sendto_wrapper(bss->drv->eapol_tx_sock, data, data_len, 0,
 		     (struct sockaddr *) &ll, sizeof(ll));
 	if (ret < 0)
 		wpa_printf(MSG_ERROR, "nl80211: EAPOL TX: %s",
@@ -7757,10 +7758,9 @@ static void handle_eapol(int sock, void *eloop_ctx, void *sock_ctx)
 	struct sockaddr_ll lladdr;
 	unsigned char buf[3000];
 	int len;
-	socklen_t fromlen = sizeof(lladdr);
+	int fromlen = sizeof(lladdr);
 
-	len = recvfrom(sock, buf, sizeof(buf), 0,
-		       (struct sockaddr *)&lladdr, &fromlen);
+	len = recvfrom_wrapper(sock, buf, sizeof(buf), 0, (struct sockaddr *)&lladdr, &fromlen);
 	if (len < 0) {
 		perror("recv");
 		return;
