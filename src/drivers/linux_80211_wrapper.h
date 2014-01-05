@@ -6,6 +6,7 @@
  * See README for more details.
  */
 
+
 #ifndef LINUX_80211_WRAPPER_H
 #define LINUX_80211_WRAPPER_H
 /*
@@ -30,6 +31,22 @@ int nl_send_wrapper(struct nl_handle *handle, struct nl_msg *msg);
  */
 int nl_recv_wrapper(struct nl_handle *handle, struct nl_cb *cb);
 void nl_destroy_handles(struct nl_handle **handle);
+/*
+*eapol_tx_sock
+*/
+int socket_wrapper(int domain, int type, int protocol);
+
+int recvmsg_wrapper(int sock, struct msghdr *msg, int flags);
+
+int sendto_wrapper(int sock, const void *msg, int len, unsigned int flags,
+	const struct sockaddr *to, int tolen);
+/*
+*eapol_sock
+*/
+int recvfrom_wrapper(int sock, void *buf, int len, unsigned int lags,
+	struct sockaddr *from, int *fromlen);
+
+
 
 /* 
  * callback:typedef void (*eloop_sock_handler)(int sock, void *eloop_data, void *user_data);
