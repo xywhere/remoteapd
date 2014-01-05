@@ -5,6 +5,13 @@
  * This software may be distributed under the terms of the BSD license.
  * See README for more details.
  */
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdio.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <arpa/inet.h>
 
 #include "includes.h"
 #include <sys/ioctl.h>
@@ -35,6 +42,7 @@
 #include "driver.h"
 
 #include "linux_80211_wrapper.h"
+
 
 #ifdef CONFIG_LIBNL20
 /* libnl 2.0 compatibility code */
@@ -87,13 +95,13 @@ struct nl_handle * nl_create_handle(struct nl_cb *cb, const char *dbg)
 {
 	struct nl_handle *handle;
 
-	handle = nl80211_handle_alloc(cb);
+	handle = nl80211_handle_alloc(cb);                                                   
 	if (handle == NULL) {
 		wpa_printf(MSG_ERROR, "nl80211: Failed to allocate netlink "
 			   "callbacks (%s)", dbg);
 		return NULL;
 	}
-
+	
 	if (genl_connect(handle)) {
 		wpa_printf(MSG_ERROR, "nl80211: Failed to connect to generic "
 			   "netlink (%s)", dbg);
@@ -128,3 +136,25 @@ int epoll_wrapper(int sock, eloop_sock_handler handler,
 {
     return eloop_register_read_sock(sock,handler,eloop_data,user_data);
 }
+
+int socket_wrapper(int domain, int type, int protocol)
+{
+	return socket(domain, type, protocol);
+}
+
+int recvmsg_wrapper(int sock, struct msghdr *msg, int flags)
+{
+	return recvmsg(sock, msg, flags);
+}
+
+int sendto_wrapper(int sock, const void *msg, int len, unsigned int flags,
+	const struct sockaddr *to, int tolen)
+{
+	return sendto(sock, msg, len, flags, to, tolen);
+}
+int recvfrom_wrapper(int sock, void *buf, int len, unsigned int lags,
+	struct sockaddr *from, int *fromlen)
+{
+	return recvfrom(sock, buf, len, lags, from, fromlen);
+}
+
