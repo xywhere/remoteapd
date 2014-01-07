@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
-
+#include <string.h>
 #include "includes.h"
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -58,6 +58,10 @@
  * accounting.
  */
 static uint32_t port_bitmap[32] = { 0 };
+int server_sockfd, client_sockfd;
+int server_len, client_len;
+struct sockaddr_in server_address;
+struct sockaddr_in client_address;
 
 static struct nl_handle *nl80211_handle_alloc(void *cb)
 {
@@ -93,8 +97,8 @@ static void nl80211_handle_destroy(struct nl_handle *handle)
 
 struct nl_handle * nl_create_handle(struct nl_cb *cb, const char *dbg)
 {
+	printf("nl_create_handle\n");
 	struct nl_handle *handle;
-
 	handle = nl80211_handle_alloc(cb);                                                   
 	if (handle == NULL) {
 		wpa_printf(MSG_ERROR, "nl80211: Failed to allocate netlink "
@@ -115,6 +119,7 @@ struct nl_handle * nl_create_handle(struct nl_cb *cb, const char *dbg)
 
 void nl_destroy_handles(struct nl_handle **handle)
 {
+	printf("nl_destroy_handles\n");
 	if (*handle == NULL)
 		return;
 	nl80211_handle_destroy(*handle);
@@ -139,22 +144,54 @@ int epoll_wrapper(int sock, eloop_sock_handler handler,
 
 int socket_wrapper(int domain, int type, int protocol)
 {
+	printf("socket\n");
+
+        server_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        server_address.sin_family = AF_INET;
+        server_address.sin_addr.s_addr = htonl(INADDR_ANY);
+        server_address.sin_port = htons(1234);
+        server_len = sizeof(server_address);
+        bind(server_sockfd, (struct sockaddr *)&server_address, server_len);
+        listen(server_sockfd, 5);
+        
+        printf("server waiting\n");
+        client_len = sizeof(client_address);
+	printf("socket accept \n");
+	client_sockfd = accept(server_sockfd, (struct sockaddr *)&client_address, &client_len);
+       /* client_sockfd = accept(server_sockfd, (struct sockaddr *)&client_address, &client_len);
+        read(client_sockfd, &ch, 1);
+        ch++;
+        write(client_sockfd, &ch, 1);
+		sleep(1);
+        close(client_sockfd);*/
 	return socket(domain, type, protocol);
 }
 
 int recvmsg_wrapper(int sock, struct msghdr *msg, int flags)
 {
+	printf("recvmsg\n");
 	return recvmsg(sock, msg, flags);
 }
 
 int sendto_wrapper(int sock, const void *msg, int len, unsigned int flags,
 	const struct sockaddr *to, int tolen)
 {
+	char ch;
+	char *a = msg;
+	read(client_sockfd, &ch, 1);
+   	printf("%c\n", ch);
+	printf("len = %d\n", strlen(msg));
+        write(client_sockfd, msg, strlen(msg));
+	close(client_sockfd);
+	printf("socket sendto %s\n", msg);
+	printf("socket sendto %x\n", *a);
+	printf("sendto\n");
 	return sendto(sock, msg, len, flags, to, tolen);
 }
 int recvfrom_wrapper(int sock, void *buf, int len, unsigned int lags,
 	struct sockaddr *from, int *fromlen)
 {
+	printf("recvfrom\n");
 	return recvfrom(sock, buf, len, lags, from, fromlen);
 }
 
